@@ -1,0 +1,289 @@
+<div class="container">
+  <!-- Columna izquierda -->
+
+  <div class="chart-left">
+    <h2>Periods</h2>
+    <input
+      type="number"
+      placeholder="Enter periods"
+      class="input-periods"
+      [(ngModel)]="numberPeriods"
+      (input)="generateArrows(); clearPeriods(numberPeriods)"
+    />
+    <div *ngIf="numberPeriods > 0" class="periods">
+      <div
+        class="card"
+        *ngFor="let period of periodsData; let i = index"
+        (click)="onCardClick(i)"
+        [ngStyle]="{'position' : 'relative'}"
+      >
+        <div class="card-header">
+          <h3>Período {{ i }}</h3>
+          <span *ngIf="period.transactions.length == 2">Doble transacción</span>
+          <ng-container *ngFor="let transaction of period.transactions">
+            <span
+              [ngStyle]="{
+                color: transaction.type == 'income' ? 'green' : 'red'
+              }"
+              *ngIf="period.transactions.length < 2"
+              >{{ transaction.type == "income" ? "Ingreso" : "Egreso" }}</span
+            >
+          </ng-container>
+        </div>
+        <span [ngStyle]="{'color' : 'gray', 'font-size' : '12px', 'bottom' : '10px', 'position': 'absolute'}" *ngIf="period.transactions.length == 0"
+        >Sin valor alguno aún!</span>
+        <div class="card-body">
+          <p *ngFor="let transaction of period.transactions">
+            {{ transaction.type === "income" ? "Ingreso" : "Egreso" }}:
+            {{ transaction.value | currency }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfica -->
+  <div class="graph">
+    <div class="btns">
+      <button (click)="clearHistory()" class="btn">
+        <fa-icon [icon]="faTrash"></fa-icon>
+      </button>
+      <button (click)="addNewValue()" class="btn">
+        <fa-icon [icon]="faAdd"></fa-icon>
+      </button>
+    </div>
+    <div
+      class="line"
+      [ngStyle]="{ width: numberPeriods * 80 + '%' }"
+      *ngIf="showLine"
+    >
+      <div
+        *ngFor="let period of periodsData; let i = index"
+        class="arrow-container arrow"
+        [ngStyle]="{
+          position: 'absolute',
+          border: (period.transactions.length == 0) ? '3px solid gray' : 'none',
+          height: (period.transactions.length == 0) ?  '50px' : 'initial',
+          top: (period.transactions.length == 0) ? '-20px' : 'initial',
+          left: (i / (numberPeriods - 1)) * 99 + '%'
+        }"
+        [draggable]="true"
+        (dragstart)="onDragStart($event, i)"
+        (dragover)="onDragOver($event)"
+        (drop)="onDrop($event, i)"
+      >
+        <ng-container *ngIf="period.transactions.length === 2">
+          <span
+            class="value-line"
+            [ngStyle]="{
+              position: 'absolute',
+              top: '-102px',
+              right: '-45px'
+            }"
+          >
+            {{ period.transactions[0].value }}
+          </span>
+          <div
+            class="arrow arrow-up"
+            [ngStyle]="{
+              height: '64px',
+              position: 'absolute',
+              top: '-64px'
+            }"
+          >
+            <div
+              class="triangle-part"
+              [ngStyle]="{
+                position: 'absolute',
+                top: '0',
+                background: 'green',
+                clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
+              }"
+            ></div>
+            <div
+              class="line-part"
+              [ngStyle]="{
+                height: '87%',
+                bottom: '0',
+                background: 'green',
+                position: 'absolute'
+              }"
+            ></div>
+            <span class="numberPeriod" [ngStyle]="{ bottom: '-5px' }">{{
+              i
+            }}</span>
+          </div>
+
+          <div
+            class="arrow arrow-down"
+            [ngClass]="{
+              green: period.transactions[1].type === 'income',
+              red: period.transactions[1].type === 'expense'
+            }"
+            [ngStyle]="{
+              height: '64px',
+              position: 'absolute',
+            }"
+          >
+            <div
+              class="triangle-part"
+              [ngStyle]="{
+                position: 'absolute',
+                background: 'red',
+                bottom: '1px',
+                'clip-path': 'polygon(50% 100%, 0% 0%, 100% 0%)'
+              }"
+            ></div>
+            <div
+              class="line-part"
+              [ngStyle]="{
+                height: '50px',
+                position: 'absolute',
+                top: '0',
+                background: 'red'
+              }"
+            ></div>
+            <span
+              class="value-line"
+              [ngStyle]="{
+                position: 'absolute',
+                top: '85px'
+              }"
+            >
+              {{ period.transactions[1].value }}
+            </span>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="period.transactions.length === 1">
+          <div
+            class="arrow"
+            [ngStyle]="{
+              bottom:
+                period.transactions[0].type === 'income' ? '105px' : 'initial'
+            }"
+          >
+            <div
+              class="triangle-part"
+              [ngClass]="
+                period.transactions[0].type === 'income'
+                  ? 'triangle-part-green'
+                  : 'triangle-part-red'
+              "
+            ></div>
+            <div
+              class="line-part"
+              [ngStyle]="{
+                'background-color':
+                  period.transactions[0].type === 'income' ? 'green' : 'red',
+                bottom:
+                  period.transactions[0].type === 'income' ? '0' : 'initial',
+                top: period.transactions[0].type === 'income' ? 'initial' : '0'
+              }"
+            ></div>
+            <span
+              class="numberPeriod"
+              [ngStyle]="{
+                bottom: period.transactions[0].type === 'income' ? '0' : '85px'
+              }"
+              >{{ i }}</span
+            >
+            <span
+              [ngClass]="
+                period.transactions[0].type === 'income'
+                  ? 'value-line-green'
+                  : 'value-line-red'
+              "
+            >
+              {{ period.transactions[0].value }}
+            </span>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+    <span *ngIf="numberPeriods == null || numberPeriods == 0"
+      >Ingresa un valor en el input de periodos para generar una linea
+      recta</span
+    >
+  </div>
+
+  <!-- Modal input -->
+  <div class="modal" *ngIf="showModal">
+    <div class="modal-content">
+      <h2>Información del Período</h2>
+      <label>Transacciones:</label>
+      <select (change)="onTransactionCountChange($event)">
+        <option value="1">1 Transacción</option>
+        <option value="2">2 Transacciones</option>
+      </select>
+
+      <div *ngIf="transactionCount === 1">
+        <label>Tipo de Transacción:</label>
+        <select [(ngModel)]="modalData[0].type">
+          <option value="income">Ingreso</option>
+          <option value="expense">Egreso</option>
+        </select>
+        <label>Valor:</label>
+        <input
+          [placeholder]="
+            'Ingresa el valor del ' +
+            (modalData[0].type == 'income' ? 'ingreso' : 'egreso')
+          "
+          type="number"
+          [(ngModel)]="modalData[0].value"
+        />
+      </div>
+
+      <div *ngIf="transactionCount === 2">
+        <label>Ingreso:</label>
+        <input type="number" [(ngModel)]="modalData[0].value" />
+        <label>Egreso:</label>
+        <input type="number" [(ngModel)]="modalData[1].value" />
+      </div>
+
+      <div class="actions">
+        <button (click)="onCancel()" class="btn cancel">Cancelar</button>
+        <button (click)="onConfirm()" class="btn confirm">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirmar eliminación -->
+  <div class="confirm-trash modal" *ngIf="showModalTrash">
+    <div class="modal-content">
+      <h2 style="font-size: 18px !important">
+        ¿Está seguro de eliminar todo el historial?
+      </h2>
+      <div class="actions">
+        <button
+          (click)="onCancelTrash()"
+          class="btn cancel"
+          style="background-color: none !important; color: #222"
+        >
+          Cancelar
+        </button>
+        <button
+          (click)="onConfirmTrash()"
+          class="btn confirm"
+          style="background-color: red; color: white"
+        >
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal animación -->
+  <div class="confirm-modal modal" *ngIf="confirmDelete">
+    <div class="center">
+      <div class="swal-icon swal-icon--success">
+        <span
+          class="swal-icon--success__line swal-icon--success__line--long"
+        ></span>
+        <span
+          class="swal-icon--success__line swal-icon--success__line--tip"
+        ></span>
+      </div>
+      <span>¡Historial eliminado correctamente!</span>
+    </div>
+  </div>
+</div>
